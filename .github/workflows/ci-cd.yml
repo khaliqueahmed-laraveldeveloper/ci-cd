@@ -1,0 +1,48 @@
+name: Laravel Docker-Compose CI
+
+on:
+  push:
+    branches: [ "main" ]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # We use docker-compose to start everything exactly like you do locally
+      - name: Start Services
+        run: docker-compose up -d
+
+      - name: Wait for Database to be Ready
+        run: |
+          # Wait up to 60 seconds for MySQL to be ready
+          for i in {1..60}; do
+            if docker-compose exec -T db mysqladmin ping -h localhost -u user_name -proot &> /dev/null; then
+              echo "✅ Database is ready!"
+              exit 0
+            fi
+            echo "⏳ Waiting for database... ($i/60)"
+            sleep 1
+          done
+          echo "❌ Database failed to start"
+          exit 1
+
+      - name: Create .env File
+        run: |
+          docker-compose exec -T app cp .env.example .env
+          docker-compose exec -T app php artisan key:generate
+
+      - name: Run Laravel Setup & Tests
+        run: |
+          # Use 'docker-compose exec' to run commands inside the 'app' container
+          # We use -T because GitHub Actions is not an interactive terminal
+          docker-compose exec -T app php artisan migrate --force
+          docker-compose exec -T app php artisan test
+        env:
+          # These must match your docker-compose.yml exactly
+          DB_HOST: db
+          DB_DATABASE: laravel
+          DB_USERNAME: user_name
+          DB_PASSWORD: root
