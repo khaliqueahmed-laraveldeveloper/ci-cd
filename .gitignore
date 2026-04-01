@@ -1,0 +1,58 @@
+# Laravel
+/vendor/
+.env
+.env.local
+.env.production
+.env.staging
+.env.backup
+
+/storage/app/*
+!/storage/app/.gitkeep
+/storage/framework/cache/*
+!/storage/framework/cache/.gitkeep
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitkeep
+/storage/framework/views/*
+!/storage/framework/views/.gitkeep
+/storage/logs/*
+!/storage/logs/.gitkeep
+/storage/pail/*
+!/storage/pail/.gitkeep
+
+/bootstrap/cache/*
+!/bootstrap/cache/.gitkeep
+
+# Node.js
+/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+/public/build
+/public/hot
+
+# IDE and Editor
+.vscode/
+.idea/
+.fleet
+.nova
+.zed
+.phpactor.json
+_ide_helper.php
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tests
+.phpunit.result.cache
+/.phpunit.cache
+
+# Composer
+/auth.json
+
+# Homestead
+Homestead.json
+Homestead.yaml
+
+# CI/CD
+ci-cd.yml
