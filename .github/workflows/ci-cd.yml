@@ -19,15 +19,29 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y docker-compose
 
-      # 3️⃣ Start Docker services
-      - name: Start Services
-        run: docker-compose up -d
+      name: Laravel Docker CI
 
-      # 4️⃣ Wait for Database to be ready
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1️⃣ Start Docker services
+      - name: Start Services
+        run: docker compose up -d
+
+      # 2️⃣ Wait for Database
       - name: Wait for Database
         run: |
-          echo "⏳ Waiting for DB to be ready..."
-          docker-compose exec -T app bash -c "
+          echo "⏳ Waiting for DB..."
+          docker compose exec -T app bash -c "
             until mysql -h db -u user_name -proot -e 'select 1'; do
               echo 'Waiting for DB...'
               sleep 2
@@ -35,12 +49,27 @@ jobs:
           "
           echo "✅ Database is ready!"
 
-      # 5️⃣ Setup Laravel environment
+      # 3️⃣ Setup Laravel environment
       - name: Setup .env and App Key
         run: |
-          docker-compose exec -T app cp .env.example .env || true
-          docker-compose exec -T app php artisan key:generate
-          docker-compose exec -T app chmod -R 777 storage bootstrap/cache
+          docker compose exec -T app cp .env.example .env || true
+          docker compose exec -T app php artisan key:generate
+          docker compose exec -T app chmod -R 777 storage bootstrap/cache
+
+      # 4️⃣ Install PHP dependencies
+      - name: Install Dependencies
+        run: docker compose exec -T app composer install
+
+      # 5️⃣ Run Migrations & Tests
+      - name: Run Migrations & Tests
+        run: |
+          docker compose exec -T app php artisan migrate --force
+          docker compose exec -T app php artisan test --verbose
+        env:
+          DB_HOST: db
+          DB_DATABASE: laravel
+          DB_USERNAME: user_name
+          DB_PASSWORD: root
 
       # 6️⃣ Install PHP dependencies
       - name: Install Dependencies
