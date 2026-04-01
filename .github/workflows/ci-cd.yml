@@ -1,1 +1,53 @@
 
+name: Laravel Docker CI
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2️⃣ Start Docker containers
+      - name: Start Docker Services
+        run: docker compose up -d
+
+      # 3️⃣ Wait for database to be ready
+      - name: Wait for DB
+        run: |
+          echo "⏳ Waiting for DB..."
+          docker compose exec -T app bash -c "
+            until mysql -h db -u user_name -proot -e 'select 1'; do
+              echo 'Waiting for DB...'
+              sleep 2
+            done
+          "
+          echo "✅ Database is ready!"
+
+      # 4️⃣ Set up Laravel environment
+      - name: Setup .env and App Key
+        run: |
+          docker compose exec -T app cp .env.example .env || true
+          docker compose exec -T app php artisan key:generate
+          docker compose exec -T app chmod -R 777 storage bootstrap/cache
+
+      # 5️⃣ Install PHP dependencies
+      - name: Install Dependencies
+        run: docker compose exec -T app composer install
+
+      # 6️⃣ Run Migrations & Tests
+      - name: Run Migrations & Tests
+        run: |
+          docker compose exec -T app php artisan migrate --force
+          docker compose exec -T app php artisan test --verbose
+        env:
+          DB_HOST: db
+          DB_DATABASE: laravel
+          DB_USERNAME: user_name
+          DB_PASSWORD: root
